@@ -1,6 +1,10 @@
+import os
 import discord
 from discord.ext import commands
+from dotenv import load_dotenv
 import blackjack as bljack
+
+load_dotenv()
 
 """
 Blackjack
@@ -27,7 +31,7 @@ playerHand = []
 gameActive = False
 
 # info
-TOKEN = "XXXX"
+TOKEN = os.getenv("DISCORD_BOT_TOKEN")
 client = commands.Bot(command_prefix='.')
 bot = discord.Client()
 
