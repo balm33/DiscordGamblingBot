@@ -4,18 +4,21 @@ from discord.ext import commands
 from dotenv import load_dotenv
 import blackjack as bljack
 import db
+import genImage
+from PIL import Image
 
 load_dotenv()
+cwd = os.getcwd()
 
 """
 Blackjack
 TODO:
-- Store individual player data in MongoDB
+X Store individual player data in MongoDB
 - Add betting(currency)
-- Gameplay: player and dealer hands
-- Dealer logic
+X Gameplay: player and dealer hands
+X Dealer logic
 
-- Card images
+X Card images
 
 - Doubles
 - Splits
@@ -109,7 +112,7 @@ async def blackjack(ctx, *args):
                 if not gameActive:
                     await ctx.send("**You have no active blackjack hand!**\nTry ```.blackjack new BET_AMOUNT``` to start a new one!")
                     return 0
-                await ctx.send("user requested a hit")
+                await ctx.send(f"<@{userId}> requested a hit!")
                 
                 if len(playerHand) == 0: # first turn
                     if len(deck) < 4: #if deck empty refill
@@ -124,12 +127,13 @@ async def blackjack(ctx, *args):
                 else:
                     playerHand.append(bljack.getCard(deck))
                     db.ins(userId, playerHand, dealerHand, gameActive, deck, bet)
+                await sendImage(ctx, genImage.make_table(playerHand, dealerHand, True))
 
             elif action == "stand":
                 if not gameActive:
                     await ctx.send("**You have no active blackjack hand!**\nTry ```.blackjack new BET_AMOUNT``` to start a new one!")
                     return 0
-                await ctx.send("user requested a stand")
+                await ctx.send(f"<@{userId}> requested a stand!")
                 db.ins(userId, playerHand, dealerHand, gameActive, deck, bet)
                 gameActive = False
             elif action == "split":
@@ -152,23 +156,28 @@ async def blackjack(ctx, *args):
             playerSum = bljack.getHandSum(playerHand)
             dealerSum = bljack.getHandSum(dealerHand)
 
+            await ctx.send(f"<@{userId}> currently has {playerSum}")
+
             if playerSum == 21:
                 if dealerSum != 21:
-                    await ctx.send("player wins")
+                    await sendImage(ctx, genImage.make_table(playerHand, dealerHand))
+                    await ctx.send(f"<@{userId}> **wins!**")
                     gameActive = False
                     playerHand = []
                     dealerHand = []
                     bet = None
                     db.ins(userId, playerHand, dealerHand, gameActive, deck, bet)
                 else:
-                    await ctx.send("player ties")
+                    await sendImage(ctx, genImage.make_table(playerHand, dealerHand))
+                    await ctx.send(f"<@{userId}> and the dealer **tie!**")
                     gameActive = False
                     playerHand = []
                     dealerHand = []
                     bet = None
                     db.ins(userId, playerHand, dealerHand, gameActive, deck, bet)
-            elif dealerSum == 21:
-                await ctx.send("player loses")
+            elif dealerSum == 21 or playerSum > 21:
+                await sendImage(ctx, genImage.make_table(playerHand, dealerHand))
+                await ctx.send(f"<@{userId}> **loses** to the dealer")
                 gameActive = False
                 playerHand = []
                 dealerHand = []
@@ -176,6 +185,7 @@ async def blackjack(ctx, *args):
                 db.ins(userId, playerHand, dealerHand, gameActive, deck, bet)
             else:
                 if not gameActive:
+                    await sendImage(ctx, genImage.make_table(playerHand, dealerHand))
                     while dealerSum < 17: # stands soft 17
                         if len(deck) <= 0: #if deck empty refill
                             bljack.fillDeck(deck)
@@ -184,30 +194,35 @@ async def blackjack(ctx, *args):
                         dealerHand.append(bljack.getCard(deck))
                         dealerSum = bljack.getHandSum(dealerHand)
                         db.ins(userId, playerHand, dealerHand, gameActive, deck, bet)
+                    await sendImage(ctx, genImage.make_table(playerHand, dealerHand))
                     if playerSum > dealerSum: # player wins
-                        await ctx.send("player wins")
-                        gameActive = False
-                        playerHand = []
-                        dealerHand = []
-                        bet = None
-                        db.ins(userId, playerHand, dealerHand, gameActive, deck, bet)
-                    elif dealerSum >= playerSum and dealerSum <= 21: # player loses
-                        await ctx.send("player loses")
+                        await ctx.send(f"<@{userId}> **wins!**")
                         gameActive = False
                         playerHand = []
                         dealerHand = []
                         bet = None
                         db.ins(userId, playerHand, dealerHand, gameActive, deck, bet)
                     elif playerSum == dealerSum: # player ties
-                        await ctx.send("player ties")
+                        await ctx.send(f"<@{userId}> and the dealer **tie!**")
                         gameActive = False
                         playerHand = []
                         dealerHand = []
                         bet = None
                         db.ins(userId, playerHand, dealerHand, gameActive, deck, bet)
-            print(f'Dealer hand: {dealerHand}\nUser hand: {playerHand}')
-            print(f'Dealer sum: {dealerSum}\nUser sum: {playerSum}')
+                    elif dealerSum >= playerSum and dealerSum <= 21: # player loses
+                        await ctx.send(f"<@{userId}> **loses** to the dealer")
+                        gameActive = False
+                        playerHand = []
+                        dealerHand = []
+                        bet = None
+                        db.ins(userId, playerHand, dealerHand, gameActive, deck, bet)
 
+@client.command()
+async def test(ctx):
+    await sendImage(ctx, genImage.make_table())
 
+async def sendImage(ctx, img):
+    img.save('img.png')
+    await ctx.send(file=discord.File(cwd +'/img.png'))
 
 client.run(TOKEN)
