@@ -4,7 +4,7 @@ import os
 cwd = os.getcwd()
 
 def make_image(date="2020 09 21", day="A"):
-    img = Image.open(cwd + "/card-empty.png")
+    img = Image.open(cwd + "images/.png")
     
     img.show()
     # img.save('img.png')
