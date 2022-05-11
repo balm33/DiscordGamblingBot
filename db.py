@@ -15,45 +15,38 @@ client = MongoClient(os.getenv("MONGODB_API_TOKEN"))
 bjDB = client.blackjack.data
 
 # insert object into database
-def ins(userId, userCards, dealerCards, handActive, deck):
+def ins(userId, userCards, dealerCards, handActive, deck, betAmount):
     dict = {
         "userId": userId,
         "userCards": userCards,
         "dealerCards": dealerCards,
         "isHandActive": handActive,
-        "deck": deck
+        "deck": deck,
+        "betAmount": betAmount
     }
     
     # checks if object already exists
-    dup = bjDB.count_documents(dict)
+    dup = findById(userId)
     
     # if it does not exist create new object
-    if dup <= 0:
+    if dup == None:
         result = bjDB.insert_one(dict)
         print(f'Added to database with id {result.inserted_id}')
     # if it does exist replace data with updated data
     else:
         try:
-            dataId = bjDB.find_one(dict)['_id']
+            dataId = bjDB.find({"userId": userId}, {"_id": 1}).next()["_id"]
+            print(dataId)
             bjDB.replace_one({'_id': dataId}, dict)
             print(f"Replaced duplicate at id {dataId}")
         except Exception as e:
             print("No duplicates present", e)
 
-def find(week, name):
-    dict0 = {
-        "week": week,
-        "name": name
+def findById(userId):
+    dict = {
+        "userId": userId,
     }
-    fnd = bjDB.find_one(dict0, {'_id': False})
+    fnd = bjDB.find_one(dict, {'_id': False})
     return fnd
 
-# def find_all(week):
-#     arr = []
-
-#     cursor = db.find({"week": week}, {'_id': False})
-#     for document in cursor:
-#         arr.append(document)
-#     return arr
-
-ins(0, 0, 0, 0, 0)
+# ins(0, 0, 0, 0, 0)
