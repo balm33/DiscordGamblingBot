@@ -36,7 +36,6 @@ def ins(userId, userCards, dealerCards, handActive, deck, betAmount):
     else:
         try:
             dataId = bjDB.find({"userId": userId}, {"_id": 1}).next()["_id"]
-            print(dataId)
             bjDB.replace_one({'_id': dataId}, dict)
             print(f"Replaced duplicate at id {dataId}")
         except Exception as e:

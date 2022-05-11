@@ -18,3 +18,24 @@ def getCard(deck):
     card = deck[0]
     deck.pop(0)
     return card
+
+def getHandSum(hand):
+    handSum = 0
+    for i in range(len(hand)):
+        card = hand[i][0]
+
+        if card in ['J', 'Q', 'K']:
+            card = 10
+        elif card == 'A':
+            card = 11
+        else:
+            card = int(card)
+        handSum += card # add value of card
+    
+    if handSum > 21: # if losing aces become low
+        for i in range(len(hand)):
+            if handSum > 21:
+                card = hand[i][0]
+                if card == 'A':
+                    handSum -= 10
+    return handSum
