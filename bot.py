@@ -46,6 +46,7 @@ async def on_message(message):
 async def blackjack(ctx, *args):
     bet = None
     userId = ctx.author.id
+    userName = ctx.author.name
     userData = db.findById(userId)
     gameActive = False
     
@@ -127,7 +128,7 @@ async def blackjack(ctx, *args):
                 else:
                     playerHand.append(bljack.getCard(deck))
                     db.ins(userId, playerHand, dealerHand, gameActive, deck, bet)
-                await sendImage(ctx, genImage.make_table(playerHand, dealerHand, True))
+                await sendImage(ctx, genImage.make_table(playerHand, dealerHand, userName, True))
 
             elif action == "stand":
                 if not gameActive:
@@ -160,7 +161,7 @@ async def blackjack(ctx, *args):
 
             if playerSum == 21:
                 if dealerSum != 21:
-                    await sendImage(ctx, genImage.make_table(playerHand, dealerHand))
+                    await sendImage(ctx, genImage.make_table(playerHand, dealerHand, userName))
                     await ctx.send(f"<@{userId}> **wins!**")
                     gameActive = False
                     playerHand = []
@@ -168,7 +169,7 @@ async def blackjack(ctx, *args):
                     bet = None
                     db.ins(userId, playerHand, dealerHand, gameActive, deck, bet)
                 else:
-                    await sendImage(ctx, genImage.make_table(playerHand, dealerHand))
+                    await sendImage(ctx, genImage.make_table(playerHand, dealerHand, userName))
                     await ctx.send(f"<@{userId}> and the dealer **tie!**")
                     gameActive = False
                     playerHand = []
@@ -176,7 +177,7 @@ async def blackjack(ctx, *args):
                     bet = None
                     db.ins(userId, playerHand, dealerHand, gameActive, deck, bet)
             elif dealerSum == 21 or playerSum > 21:
-                await sendImage(ctx, genImage.make_table(playerHand, dealerHand))
+                await sendImage(ctx, genImage.make_table(playerHand, dealerHand, userName))
                 await ctx.send(f"<@{userId}> **loses** to the dealer")
                 gameActive = False
                 playerHand = []
@@ -185,7 +186,7 @@ async def blackjack(ctx, *args):
                 db.ins(userId, playerHand, dealerHand, gameActive, deck, bet)
             else:
                 if not gameActive:
-                    await sendImage(ctx, genImage.make_table(playerHand, dealerHand))
+                    await sendImage(ctx, genImage.make_table(playerHand, dealerHand, userName))
                     while dealerSum < 17: # stands soft 17
                         if len(deck) <= 0: #if deck empty refill
                             bljack.fillDeck(deck)
@@ -194,7 +195,7 @@ async def blackjack(ctx, *args):
                         dealerHand.append(bljack.getCard(deck))
                         dealerSum = bljack.getHandSum(dealerHand)
                         db.ins(userId, playerHand, dealerHand, gameActive, deck, bet)
-                    await sendImage(ctx, genImage.make_table(playerHand, dealerHand))
+                    await sendImage(ctx, genImage.make_table(playerHand, dealerHand, userName))
                     if playerSum > dealerSum: # player wins
                         await ctx.send(f"<@{userId}> **wins!**")
                         gameActive = False

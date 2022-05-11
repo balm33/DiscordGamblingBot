@@ -24,10 +24,13 @@ def make_image(number='A', suite="spades", turnOne=False):
     # img.save('img.png')
     return img
 
-def make_table(userHand, dealerHand, turnOne=False):
+def make_table(userHand, dealerHand, userName, turnOne=False):
     img = Image.new("RGB", (600,400), (115, 120, 128))
     d = ImageDraw.Draw(img)
     fnt = ImageFont.truetype(cwd + "/resources/Futura-Medium.ttf", 25)
+    fnt2 = ImageFont.truetype(cwd + "/resources/Futura-Medium.ttf", 15)
+
+    d.text((10, 10), userName, fill=(255, 255, 255), font=fnt2)
 
     d.text((225, 10), "Dealer Cards", fill=(255, 255, 255), font=fnt)
     if turnOne:

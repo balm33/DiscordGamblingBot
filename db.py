@@ -31,15 +31,15 @@ def ins(userId, userCards, dealerCards, handActive, deck, betAmount):
     # if it does not exist create new object
     if dup == None:
         result = bjDB.insert_one(dict)
-        print(f'Added to database with id {result.inserted_id}')
+        # print(f'Added to database with id {result.inserted_id}')
     # if it does exist replace data with updated data
     else:
         try:
             dataId = bjDB.find({"userId": userId}, {"_id": 1}).next()["_id"]
             bjDB.replace_one({'_id': dataId}, dict)
-            print(f"Replaced duplicate at id {dataId}")
+            # print(f"Replaced duplicate at id {dataId}")
         except Exception as e:
-            print("No duplicates present", e)
+            print("Error: ", e)
 
 def findById(userId):
     dict = {

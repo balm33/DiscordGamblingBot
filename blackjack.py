@@ -9,7 +9,8 @@ def fillDeck(deck):
     for x in range(numDecks):
         for i in range(len(CARDS)):
             for j in range(len(SUITES)):
-                deck.append([CARDS[i], SUITES[j]])
+                if [CARDS[i], SUITES[j]] not in deck:
+                    deck.append([CARDS[i], SUITES[j]])
 
 def shuffleDeck(deck):
     random.shuffle(deck)
