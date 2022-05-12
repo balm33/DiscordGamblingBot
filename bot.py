@@ -42,12 +42,32 @@ async def on_message(message):
     # print(message.author.id)
     await client.process_commands(message)
 
+@client.command(aliases=["bal"])
+async def balance(ctx):
+    userId = ctx.author.id
+    money = db.getMoney(userId)
+    if money == None or money <= 0:
+        await ctx.send("It looks like you dont have any money.\nGet some more with **.broke!**")
+    else:
+        await ctx.send(f'<@{userId}> has ${money}')
+
+@client.command(aliases=["bankrupt"])
+async def broke(ctx):
+    userId = ctx.author.id
+    money = db.getMoney(userId)
+
+    if money == None or money <= 0:
+        db.updateMoney(userId, 100)
+        await ctx.send("Here's $100 on me!\nSpend it wisely!")
+    else:
+        await ctx.send(f'<@{userId}>, you have too much money to use that command!')
+
 @client.command(aliases=["bj"])
 async def blackjack(ctx, *args):
-    bet = None
     userId = ctx.author.id
     userName = ctx.author.name
     userData = db.findById(userId)
+    bet = userData["betAmount"]
     gameActive = False
     
     if len(args) == 0:
@@ -81,7 +101,14 @@ async def blackjack(ctx, *args):
             if len(args) < 2:
                 await ctx.send("You must include an amount to bet!")
                 return 0
-            await ctx.send("Starting new hand with bet ${None}")
+            bet = int(args[1])
+            money = db.getMoney(userId)
+            if bet > money:
+                await ctx.send(f"You do not have enought money in your account to make that bet!")
+            else:
+                db.updateMoney(userId, money - bet)
+                await ctx.send(f"Starting new hand with bet ${bet}")
+
             try:
                 deck = userData["deck"]
                 dealerHand = []
@@ -162,7 +189,8 @@ async def blackjack(ctx, *args):
             if playerSum == 21:
                 if dealerSum != 21:
                     await sendImage(ctx, genImage.make_table(playerHand, dealerHand, userName))
-                    await ctx.send(f"<@{userId}> **wins!**")
+                    db.updateMoney(userId, db.getMoney(userId) + (bet*2))
+                    await ctx.send(f"<@{userId}> **wins ${bet*2}!**")
                     gameActive = False
                     playerHand = []
                     dealerHand = []
@@ -170,6 +198,7 @@ async def blackjack(ctx, *args):
                     db.ins(userId, playerHand, dealerHand, gameActive, deck, bet)
                 else:
                     await sendImage(ctx, genImage.make_table(playerHand, dealerHand, userName))
+                    db.updateMoney(userId, db.getMoney(userId) + (bet))
                     await ctx.send(f"<@{userId}> and the dealer **tie!**")
                     gameActive = False
                     playerHand = []
@@ -196,14 +225,16 @@ async def blackjack(ctx, *args):
                         dealerSum = bljack.getHandSum(dealerHand)
                         db.ins(userId, playerHand, dealerHand, gameActive, deck, bet)
                     await sendImage(ctx, genImage.make_table(playerHand, dealerHand, userName))
-                    if playerSum > dealerSum: # player wins
-                        await ctx.send(f"<@{userId}> **wins!**")
+                    if playerSum > dealerSum or dealerSum > 21: # player wins
+                        db.updateMoney(userId, db.getMoney(userId) + (bet*2))
+                        await ctx.send(f"<@{userId}> **wins ${bet*2}!**")
                         gameActive = False
                         playerHand = []
                         dealerHand = []
                         bet = None
                         db.ins(userId, playerHand, dealerHand, gameActive, deck, bet)
                     elif playerSum == dealerSum: # player ties
+                        db.updateMoney(userId, db.getMoney(userId) + (bet))
                         await ctx.send(f"<@{userId}> and the dealer **tie!**")
                         gameActive = False
                         playerHand = []

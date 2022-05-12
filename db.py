@@ -4,15 +4,9 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# """
-# WILL LIKELY NEED TO CHANGE CLIENT FOR HEROKU USE
-# """
-# client = MongoClient("mongodb+srv://laptop:laptop-pass@footballpicker-cluster.yqjdz.mongodb.net/myFirstDatabase?retryWrites=true&w=majority")
-# col = client.football_picks
-# db = col.data
-
 client = MongoClient(os.getenv("MONGODB_API_TOKEN"))
 bjDB = client.blackjack.data
+monDB = client.currency.data
 
 # insert object into database
 def ins(userId, userCards, dealerCards, handActive, deck, betAmount):
@@ -31,7 +25,7 @@ def ins(userId, userCards, dealerCards, handActive, deck, betAmount):
     # if it does not exist create new object
     if dup == None:
         result = bjDB.insert_one(dict)
-        # print(f'Added to database with id {result.inserted_id}')
+        print(f'Added to database with id {result.inserted_id}')
     # if it does exist replace data with updated data
     else:
         try:
@@ -48,4 +42,30 @@ def findById(userId):
     fnd = bjDB.find_one(dict, {'_id': False})
     return fnd
 
-# ins(0, 0, 0, 0, 0)
+def updateMoney(userId, money):
+    dict = {
+        "userId": userId,
+        "money": money
+    }
+    
+    # checks if object already exists
+    dup = monDB.find_one({"userId": userId}, {'_id': False})
+    # if it does not exist create new object
+    if dup == None:
+        result = monDB.insert_one(dict)
+        print(f'Added to database with id {result.inserted_id}')
+    # if it does exist replace data with updated data
+    else:
+        try:
+            dataId = monDB.find({"userId": userId}, {"_id": 1}).next()["_id"]
+            monDB.replace_one({'_id': dataId}, dict)
+            # print(f"Replaced duplicate at id {dataId}")
+        except Exception as e:
+            print("Error: ", e)
+
+def getMoney(userId):
+    dict = {
+        "userId": userId,
+    }
+    money = monDB.find_one(dict, {'_id': False, 'money': True})
+    return money["money"]
