@@ -5,7 +5,6 @@ from dotenv import load_dotenv
 import blackjack as bljack
 import db
 import genImage
-from PIL import Image
 
 load_dotenv()
 cwd = os.getcwd()
@@ -46,28 +45,34 @@ async def on_message(message):
 async def balance(ctx):
     userId = ctx.author.id
     money = db.getMoney(userId)
-    if money == None or money <= 0:
+    try:
+        if money == None or money <= 0:
+            await ctx.send("It looks like you dont have any money.\nGet some more with **.broke!**")
+        else:
+            await ctx.send(f'<@{userId}> has ${money}')
+    except:
         await ctx.send("It looks like you dont have any money.\nGet some more with **.broke!**")
-    else:
-        await ctx.send(f'<@{userId}> has ${money}')
 
 @client.command(aliases=["bankrupt"])
 async def broke(ctx):
     userId = ctx.author.id
     money = db.getMoney(userId)
 
-    if money == None or money <= 0:
+    try:
+        if money == None or money <= 0:
+            db.updateMoney(userId, 100)
+            await ctx.send("Here's $100 on me!\nSpend it wisely!")
+        else:
+            await ctx.send(f'<@{userId}>, you have too much money to use that command!')
+    except:
         db.updateMoney(userId, 100)
         await ctx.send("Here's $100 on me!\nSpend it wisely!")
-    else:
-        await ctx.send(f'<@{userId}>, you have too much money to use that command!')
 
 @client.command(aliases=["bj"])
 async def blackjack(ctx, *args):
     userId = ctx.author.id
     userName = ctx.author.name
     userData = db.findById(userId)
-    bet = userData["betAmount"]
     gameActive = False
     
     if len(args) == 0:
@@ -97,6 +102,8 @@ async def blackjack(ctx, *args):
             db.ins(userId, [], [], False, [], None)
             userData = db.findById(userId)
 
+        bet = userData["betAmount"]
+
         if action == "new":
             if len(args) < 2:
                 await ctx.send("You must include an amount to bet!")
@@ -107,7 +114,7 @@ async def blackjack(ctx, *args):
                 await ctx.send(f"You do not have enought money in your account to make that bet!")
             else:
                 db.updateMoney(userId, money - bet)
-                await ctx.send(f"Starting new hand with bet ${bet}")
+                await ctx.send(f"Starting new hand with bet ${bet}\nPlay with either **.blackjack hit** or **.blackjack stand**")
 
             try:
                 deck = userData["deck"]
@@ -122,6 +129,19 @@ async def blackjack(ctx, *args):
                 userData = db.findById(userId)
             except:
                 await ctx.send("Error: something went wrong")
+                
+            if len(playerHand) == 0: # first turn
+                    if len(deck) < 4: #if deck empty refill
+                        bljack.fillDeck(deck)
+                        bljack.shuffleDeck(deck)
+                        await ctx.send("Deck shuffled!")
+                    playerHand.append(bljack.getCard(deck))
+                    dealerHand.append(bljack.getCard(deck))
+                    playerHand.append(bljack.getCard(deck))
+                    dealerHand.append(bljack.getCard(deck))
+                    db.ins(userId, playerHand, dealerHand, gameActive, deck, bet)
+                    await sendImage(ctx, genImage.make_table(playerHand, dealerHand, userName, True))
+
         else:
             deck = userData["deck"]
             playerHand = userData["userCards"]
@@ -136,28 +156,16 @@ async def blackjack(ctx, *args):
             #################
             # Player Action #
             #################
-            if action == "hit":
+            if action in ["hit", "h"]:
                 if not gameActive:
                     await ctx.send("**You have no active blackjack hand!**\nTry ```.blackjack new BET_AMOUNT``` to start a new one!")
                     return 0
                 await ctx.send(f"<@{userId}> requested a hit!")
                 
-                if len(playerHand) == 0: # first turn
-                    if len(deck) < 4: #if deck empty refill
-                        bljack.fillDeck(deck)
-                        bljack.shuffleDeck(deck)
-                        await ctx.send("Deck shuffled!")
-                    playerHand.append(bljack.getCard(deck))
-                    dealerHand.append(bljack.getCard(deck))
-                    playerHand.append(bljack.getCard(deck))
-                    dealerHand.append(bljack.getCard(deck))
-                    db.ins(userId, playerHand, dealerHand, gameActive, deck, bet)
-                else:
-                    playerHand.append(bljack.getCard(deck))
-                    db.ins(userId, playerHand, dealerHand, gameActive, deck, bet)
+                playerHand.append(bljack.getCard(deck))
+                db.ins(userId, playerHand, dealerHand, gameActive, deck, bet)
                 await sendImage(ctx, genImage.make_table(playerHand, dealerHand, userName, True))
-
-            elif action == "stand":
+            elif action in ["stand", "s"]:
                 if not gameActive:
                     await ctx.send("**You have no active blackjack hand!**\nTry ```.blackjack new BET_AMOUNT``` to start a new one!")
                     return 0
@@ -173,7 +181,17 @@ async def blackjack(ctx, *args):
                 if not gameActive:
                     await ctx.send("**You have no active blackjack hand!**\nTry ```.blackjack new BET_AMOUNT``` to start a new one!")
                     return 0
-                pass
+                if len(playerHand) == 2: # first cards
+                    bet = userData["betAmount"]
+                    money = db.getMoney(userId)
+                    if bet > money:
+                        await ctx.send(f"You do not have enought money in your account to make that bet!")
+                    else:
+                        db.updateMoney(userId, money - bet)
+                        playerHand.append(bljack.getCard(deck))
+                        db.ins(userId, playerHand, dealerHand, gameActive, deck, bet*2)
+                        await ctx.send(f"<@{userId}> requested to double down!")
+                        gameActive = False
             else:
                 await ctx.send("That action is not recognized.")
                 return 0

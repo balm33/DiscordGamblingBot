@@ -68,4 +68,8 @@ def getMoney(userId):
         "userId": userId,
     }
     money = monDB.find_one(dict, {'_id': False, 'money': True})
-    return money["money"]
+    try:
+        return money["money"]
+    except:
+        print("Error: Money not found")
+        return None
