@@ -8,7 +8,7 @@
     - [Blackjack](#blackjack) 
 
 # MongoDB Integration
-All of the data storage is handled by a database hosted by [MongDB](https://mongodb.com). The data for money is stored in a seperate collection from the blackjack data, so that currency can be universal if I decide to add more games to the bot.
+All of the data storage is handled by a database hosted by [Mong0DB](https://mongodb.com). The data for money is stored in a seperate collection from the blackjack data, so that currency can be universal if I decide to add more games to the bot.
 #
 ![An example of how player data is stored](readme-images/mongoEx.png)
 How player blackjack data is stored
