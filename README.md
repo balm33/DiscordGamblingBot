@@ -16,7 +16,7 @@ How player blackjack data is stored
 Using the functions apart of [db.py](db.py), the main bot program is able to read and write data to the database, independently interacting with money and game stats.
 
 # General Commands
-At any point a user can user
+At any point a user can use
 > .balance
 
 to check the current balance of their account. They can also use
